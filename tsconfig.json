@@ -16,6 +16,12 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false
-  }
+    "noFallthroughCasesInSwitch": false,
+    "types": ["node"],
+    "lib": ["es2015", "dom"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "node_modules/@types/node/buffer.d.ts",
+  ]
 }

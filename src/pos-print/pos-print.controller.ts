@@ -1,6 +1,7 @@
-import { Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PosPrintService } from './pos-print.service';
+import { PrintingReceiptDto } from './models/printing-receipt.dto';
 
 @ApiTags('Pos print')
 @Controller({
@@ -12,7 +13,7 @@ export class PosPrintController {
 
   @ApiOperation({ summary: 'Print pos bill' })
   @Post('print')
-  print() {
-    return this.posPrintService.printReceipt();
+  print(@Body() payload: PrintingReceiptDto) {
+    return this.posPrintService.printReceipt(payload);
   }
 }
