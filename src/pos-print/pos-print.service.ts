@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { PrinterTypes, ThermalPrinter } from 'node-thermal-printer';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -9,6 +9,7 @@ import {
 import { PrintingReceiptDto } from './models/printing-receipt.dto';
 import * as sharp from 'sharp';
 import { Buffer } from 'buffer';
+import { PrintingReceiptRo } from './models/printing-receipt.ro';
 
 @Injectable()
 export class PosPrintService {
@@ -30,7 +31,7 @@ export class PosPrintService {
    *
    * @param payload
    */
-  async printReceipt(payload: PrintingReceiptDto) {
+  async printReceipt(payload: PrintingReceiptDto): Promise<PrintingReceiptRo> {
     const printerIp = this.configService.get('PRINTER_IP');
     const printer = new ThermalPrinter({
       type: PrinterTypes.EPSON,
@@ -46,6 +47,10 @@ export class PosPrintService {
       printer.cut();
       await printer.execute();
       console.log('[Print jon completed] ');
+      return {
+        status: HttpStatus.OK,
+        message: 'Successful',
+      };
     } catch (error) {
       console.error('[Print failed] ', error);
     } finally {

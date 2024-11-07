@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - PORT=${PORT}
+        - PRINTER_ID=${PRINTER_ID}
+    container_name: pak_pos_printer_local
+    ports:
+      - "${PORT}:${PORT}"
+    environment:
+      - PORT=${PORT}
+      - PRINTER_ID=${PRINTER_ID}
+    restart: always
