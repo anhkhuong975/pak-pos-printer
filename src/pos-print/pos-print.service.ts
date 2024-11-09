@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { BadGatewayException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrinterTypes, ThermalPrinter } from 'node-thermal-printer';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -27,6 +27,28 @@ export class PosPrintService {
   }
 
   /**
+   * Ping to printer
+   */
+  async ping() {
+    const printerIp = this.configService.get('PRINTER_IP');
+    const printer = new ThermalPrinter({
+      type: PrinterTypes.EPSON,
+      interface: `tcp://${printerIp}`,
+    });
+    console.log(`Printer: ${printerIp}`);
+    try {
+      await printer.print(`${printerIp} PING PING PING`);
+      await printer.cut();
+      await printer.execute();
+    } catch (e) {
+      console.error(e);
+      throw new BadGatewayException(e);
+    } finally {
+      printer.clear();
+    }
+  }
+
+  /**
    * Print the receipt bill
    *
    * @param payload
@@ -44,17 +66,18 @@ export class PosPrintService {
       );
       const preparedImg = await this.preparePrintingImg(imageBuffer);
       await printer.printImageBuffer(preparedImg);
-      printer.cut();
-      await printer.execute();
-      console.log('[Print jon completed] ');
+      await printer.cut();
+      await printer.beep(2, 3);
+      await printer.execute({ waitForResponse: true });
+      printer.clear();
+      console.log(`[Printer: ${printerIp}] Print job completed`);
       return {
         status: HttpStatus.OK,
         message: 'Successful',
       };
     } catch (error) {
-      console.error('[Print failed] ', error);
+      console.error(`[Printer: ${printerIp}] Print failed: `, error);
     } finally {
-      printer.clear();
     }
   }
 
@@ -67,19 +90,36 @@ export class PosPrintService {
    */
   protected preparePrintingImg(inputImg: Buffer, dpi = 180): Promise<Buffer> {
     return new Promise((resolve, reject) => {
+      const width = Math.round((80 / 25.4) * dpi);
       sharp(inputImg)
-        .resize(Math.round((80 / 25.4) * dpi))
+        .resize(width)
         .threshold(128)
         .toColourspace('b-w')
-        .withMetadata({
-          density: 203,
+        .raw()
+        .toBuffer({ resolveWithObject: true }) // Nhận thông tin về buffer
+        .then(({ data, info }) => {
+          sharp(data, {
+            raw: {
+              width: info.width,
+              height: info.height,
+              channels: 1, // 1-bit ảnh trắng đen
+            },
+          })
+            .png({
+              compressionLevel: 9,
+              colors: 2,
+            })
+            .toBuffer((err: Error, buffer: Buffer) => {
+              if (err) {
+                console.error('Error processing image:', err);
+                reject(err);
+              }
+              resolve(buffer);
+            });
         })
-        .toBuffer((err: Error, buffer: Buffer) => {
-          if (err) {
-            console.error('Error processing image:', err);
-            reject(err);
-          }
-          resolve(buffer);
+        .catch((err) => {
+          console.error('Error processing image:', err);
+          reject(err);
         });
     });
   }

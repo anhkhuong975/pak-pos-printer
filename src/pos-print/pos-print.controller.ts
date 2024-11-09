@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PosPrintService } from './pos-print.service';
 import { PrintingReceiptDto } from './models/printing-receipt.dto';
@@ -15,5 +15,11 @@ export class PosPrintController {
   @Post('print')
   print(@Body() payload: PrintingReceiptDto) {
     return this.posPrintService.printReceipt(payload);
+  }
+
+  @ApiOperation({ summary: 'Ping to printer' })
+  @Get('ping')
+  ping() {
+    return this.posPrintService.ping();
   }
 }
