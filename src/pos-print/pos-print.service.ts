@@ -39,6 +39,7 @@ export class PosPrintService {
     try {
       await printer.print(`${printerIp} PING PING PING`);
       await printer.cut();
+      await printer.beep();
       await printer.execute();
     } catch (e) {
       console.error(e);
@@ -67,17 +68,19 @@ export class PosPrintService {
       const preparedImg = await this.preparePrintingImg(imageBuffer);
       await printer.printImageBuffer(preparedImg);
       await printer.cut();
-      await printer.beep(2, 3);
+      await printer.beep(1);
       await printer.execute({ waitForResponse: true });
-      printer.clear();
       console.log(`[Printer: ${printerIp}] Print job completed`);
       return {
         status: HttpStatus.OK,
         message: 'Successful',
       };
     } catch (error) {
+      await printer.beep(2, 3);
       console.error(`[Printer: ${printerIp}] Print failed: `, error);
+      throw new BadGatewayException(error);
     } finally {
+      printer.clear();
     }
   }
 
